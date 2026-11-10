@@ -9,12 +9,31 @@ Constraints: To conserve battery, the submersible can only move downward. From z
 **Algorithmic Strategy:**
 Our algorithmic stratige will work similarly to Dijkstra's algorithm looking at all posible paths bellow the robot and find the path that holds the highest biomass.
 
-Input: a matrix of corinates each holding a biomass score matrix: List[List[float]], a starting node row, col
+Input: a matrix of corinates each holding a biomass score matrix: List[Lists[floats]], a starting node row, col and a list of past destinations
 Expected Ouput: path to accumulate highest biomass score
 
 '''
-def algo_strat(chart, row, col):
+def algo_strat(chart, row, col, past_visited):
+    current_value = chart[row][col]
+    next_row = row + 1
+    destinations = []
+    highest = ()
+
+    if next_row >= len(chart):
+        return past_visited
+
+    for next_col in (col - 1, col, col + 1):
+        if 0 <= next_col < len(chart[0]):
+            destinations.append((next_row, next_col))
     
+    for row, col in destinations:
+        if chart[row][col] > highest:
+            highest = (row,col)
+        else:
+            None
+    
+    past_visited.append(highest)
+    return algo_strat(chart, highest[0], highest[1], past_visited)
 
 '''
 
