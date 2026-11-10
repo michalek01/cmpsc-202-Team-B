@@ -13,27 +13,36 @@ Input: a matrix of corinates each holding a biomass score matrix: List[Lists[flo
 Expected Ouput: path to accumulate highest biomass score
 
 '''
-def algo_strat(chart, row, col, past_visited):
-    current_value = chart[row][col]
-    next_row = row + 1
-    destinations = []
-    highest = ()
+FUNCTION algo_strat(chart, row, col, past_visited):
 
-    if next_row >= len(chart):
-        return past_visited
+    current_value ← chart[row][col]
+    next_row ← row + 1
+    destinations ← empty list
+    highest ← NONE
+    highest_value ← negative infinity
 
-    for next_col in (col - 1, col, col + 1):
-        if 0 <= next_col < len(chart[0]):
-            destinations.append((next_row, next_col))
-    
-    for row, col in destinations:
-        if chart[row][col] > highest:
-            highest = (row,col)
-        else:
-            None
-    
-    past_visited.append(highest)
-    return algo_strat(chart, highest[0], highest[1], past_visited)
+    IF next_row is greater than or equal to number of rows in chart:
+        RETURN past_visited
+
+    FOR next_col IN [col - 1, col, col + 1]:
+        IF next_col is within the chart boundaries:
+            ADD (next_row, next_col) TO destinations
+
+    FOR each (destination_row, destination_col) IN destinations:
+        destination_value ← chart[destination_row][destination_col]
+
+        IF destination_value > highest_value:
+            highest_value ← destination_value
+            highest ← (destination_row, destination_col)
+
+    ADD highest TO past_visited
+
+    RETURN algo_strat(
+        chart,
+        highest row,
+        highest column,
+        past_visited
+    )
 
 '''
 
