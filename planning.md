@@ -14,21 +14,19 @@ Constraints: To conserve battery, the submersible can only move downward. From z
 
 **Baseline Solution:**
 
-Our baseline is an exhaustive brute-force search that checks every valid path, so it always finds a best one, although it is too slow for large grids. The grid has n rows and m columns, both numbered from 1. A valid path is a sequence of columns (c1, ..., cn), one for each row, where every ci is between 1 and m and consecutive columns differ by at most 1. Its score is B(1, c1) + ... + B(n, cn).
+Our baseline is an exhaustive brute-force search that checks every valid path, so it always finds a best one, although it is too slow for large grids. The grid has $n$ rows and $m$ columns, both numbered from 1. A valid path is a sequence of coordinates $(1, c_1), (2, c_2), \dots, (n, c_n)$, one for each row, where every $c_i$ satisfies $1 \le c_i \le m$ and consecutive columns satisfy $|c_{i+1} - c_i| \le 1$. Its score is $\sum_{i=1}^{n} B(i, c_i)$.
 
-The algorithm tries each surface coordinate (1, j) as a starting point. From (i, j), it recursively tries the moves to (i+1, j-1), (i+1, j), and (i+1, j+1), skipping down-left when j = 1 and down-right when j = m. When the recursion reaches row n, it compares the score of the finished path with the best score so far and, if it is higher, records the score and a copy of the path. The current path is kept in one list: each coordinate is appended before a recursive call and removed after it returns, which is why the list must be copied when it is recorded. The search never stops early on a negative running total, because a hydrothermal vent may lead to rich coral further down. If several paths tie, it returns the one whose column sequence comes first in lexicographic order, since it tries moves from left to right and only replaces the best path on a strictly higher score.
+The algorithm tries each surface coordinate $(1, j)$ as a starting point. From $(i, j)$, it recursively tries the moves to $(i+1, j-1)$, $(i+1, j)$, and $(i+1, j+1)$, skipping down-left when $j = 1$ and down-right when $j = m$. When the recursion reaches row $n$, it compares the score of the finished path with the best score so far and, if it is higher, records the score and the path. Because one shared list holds the current path, the path is copied when recorded. The search never stops early on a negative running total, because a hydrothermal vent may lead to rich coral further down. If several paths tie, it returns the one whose column sequence comes first in lexicographic order, since it tries moves from left to right and only replaces the best path on a strictly higher score.
 
-For example, consider the following 3 x 3 grid:
+For example, consider the following $3 \times 3$ grid:
 
-```
-     | 1   3   0 |
-B =  | 4  -6  -2 |
-     | 2   1   9 |
+```math
+B = \begin{bmatrix} 1 & 3 & 0 \\ 4 & -6 & -2 \\ 2 & 1 & 9 \end{bmatrix}
 ```
 
-It has 17 valid paths: 5 starting from (1,1), 7 from (1,2), and 5 from (1,3). The only optimal path is (1,2) → (2,3) → (3,3), with a score of 3 + (-2) + 9 = 10, and it passes through the vent at (2,3). Always moving to the highest-scoring next coordinate scores only 7, 9, and 7 from the three starting columns, which is why the baseline checks every path.
+It has 17 valid paths: 5 starting from $(1,1)$, 7 from $(1,2)$, and 5 from $(1,3)$. The only optimal path is $(1,2) \to (2,3) \to (3,3)$, with a score of $3 + (-2) + 9 = 10$, and it passes through the vent at $(2,3)$. Always moving to the highest-scoring next coordinate scores only 7, 9, and 7 from the three starting columns, so the next move cannot be chosen by looking only one row ahead.
 
-The drawback is the number of paths. When m ≥ 2, every coordinate has two or three moves, so there are between m · 2^(n-1) and m · 3^(n-1) valid paths: 136,946 for a 10 x 10 grid and about 1.8 x 10^10 for a 20 x 20 grid.
+The drawback is the number of paths. When $m \ge 2$, every coordinate above the floor has two or three moves, so there are between $m \cdot 2^{n-1}$ and $m \cdot 3^{n-1}$ valid paths: 136,946 for a $10 \times 10$ grid and about $1.8 \times 10^{10}$ for a $20 \times 20$ grid.
 
 **Baseline Pseudocode:**
 
@@ -74,9 +72,9 @@ Function Explore(i, j, score, path):
 
 **Baseline Correctness:**
 
-Every call Explore(i, j, score, path) is made with path holding a valid path from row 1 to row i that ends at column j, and with score equal to its total. This holds for the calls from the outer loop, where path = [(1, j)] and score = B[1][j], and each recursive call extends path by one downward move inside the grid and adds that coordinate's score. Every call also returns with path unchanged, because a call at row n does not modify it and every other call removes each coordinate right after appending it. Since i grows by one with each call, the recursion always stops at row n.
+Every call `Explore(i, j, score, path)` is made with `path` holding a valid path from row 1 to row $i$ that ends at column $j$, and with `score` equal to its total. This holds for the calls from the outer loop, where `path` is $[(1, j)]$ and `score` is $B(1, j)$, and each recursive call extends `path` by one downward move inside the grid and adds that coordinate's score. Every call also returns with `path` unchanged: a call at row $n$ does not modify it, and every other call removes each coordinate it appends once the recursive call on it returns, which by induction on $n - i$ has left `path` as it found it. Since $i$ grows by one with each call, the recursion always stops at row $n$.
 
-Conversely, every valid path (c1, ..., cn) is reached by exactly one call at row n: the outer loop picks c1 once, and at each row the loop over next_col picks the next column once, because the three candidate columns are different. So the calls at row n correspond exactly to the valid paths, each with its correct score. At least one valid path always exists (straight down), and the algorithm keeps the highest score among these calls, so it returns the maximum total biomass density score and a path that achieves it.
+Conversely, every valid path $(1, c_1), \dots, (n, c_n)$ is reached by exactly one call at row $n$: the outer loop picks $c_1$ once, and at each row the loop over `next_col` picks $c_{i+1}$ exactly once, because $c_{i+1}$ is one of the three candidates, it passes the bounds test since the path is valid, and the candidates are different. So the calls at row $n$ correspond exactly to the valid paths, each with its correct score. At least one valid path always exists (straight down), and the algorithm keeps the highest score among these calls, so it returns the maximum total biomass density score and a path that achieves it.
 
 **Algorithmic Strategy:**
 Our algorithmic strategy will work similarly to Dijkstra's algorithm instead looking at all posible paths bellow the robot and find the path that holds the highest biomass.
