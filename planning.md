@@ -12,47 +12,62 @@ Output: Determine the path that maximizes the total accumulated biomass density 
 
 Constraints: To conserve battery, the submersible can only move downward. From zone (i,j), it can only move to (i+1,j-1) (down-left), (i+1,j) (straight down), or (i+1,j+1) (down-right). The submersible can start at any horizontal coordinate on the surface and end at any horizontal coordinate on the floor. 
 
-**Algorithmic Strategy:**
-Our algorithmic strategy will work similarly to Dijkstra's algorithm instead looking at all posible paths bellow the robot and find the path that holds the highest biomass.
+**Baseline Solutions:**
+Our baseline soulution will work by checking every Possible path for the maximum value of biomass density amoung them.
 
 Input: a matrix of corinates each holding a biomass score matrix: List[Lists[floats]], a starting node row, col and a list of past destinations
 Expected Ouput: path to accumulate highest biomass score
 
 '''
-FUNCTION algo_strat(chart, row, col, past_visited):
+ALGORITHM FindBestPath(chart, row, column, visitedPath)
 
-    current_value ← chart[row][col]
-    next_row ← row + 1
+    nextRow ← row + 1
     destinations ← empty list
-    highest ← NONE
-    highest_value ← negative infinity
+    highestTotal ← negative infinity
+    bestOption ← nothing
 
-    IF next_row is greater than or equal to number of rows in chart:
-        RETURN past_visited
+    IF nextRow is outside the chart:
+        RETURN visitedPath
 
-    FOR next_col IN [col - 1, col, col + 1]:
-        IF next_col is within the chart boundaries:
-            ADD (next_row, next_col) TO destinations
+    options ← empty list
 
-    FOR each (destination_row, destination_col) IN destinations:
-        destination_value ← chart[destination_row][destination_col]
+    FOR each possibleColumn in:
+        column - 1
+        column
+        column + 1
 
-        IF destination_value > highest_value:
-            highest_value ← destination_value
-            highest ← (destination_row, destination_col)
+        IF possibleColumn is inside the chart:
 
-    ADD highest TO past_visited
+            destination ← (nextRow, possibleColumn)
+            add destination to destinations
 
-    RETURN algo_strat(
-        chart,
-        highest row,
-        highest column,
-        past_visited
-    )
+            newPath ← copy of visitedPath
+            add destination to newPath
 
+            option ← FindBestPath(
+                chart,
+                nextRow,
+                possibleColumn,
+                newPath
+            )
+
+            add option to options
+
+    FOR each option in options:
+
+        total ← 0
+
+        FOR each (optionRow, optionColumn) in option:
+            total ← total + chart[optionRow][optionColumn]
+
+        IF total is greater than highestTotal:
+            highestTotal ← total
+            bestOption ← option
+
+    RETURN bestOption
 '''
 
-**Baseline Solutions:**
+**Algorithmic Solutions:**
 
 
 **Complexity Analysis:**

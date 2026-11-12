@@ -1,39 +1,49 @@
 
 
-def algo_strat(chart, row, col, past_visited):
-    current_value = chart[row][col]
+def baseline(chart, row, col, past_visited):
     next_row = row + 1
     destinations = []
-    highest = None
     highest_value = float("-inf")
-
+    best_option = None
+    
     if next_row >= len(chart):
         return past_visited
 
+    opt = []
     for next_col in (col - 1, col, col + 1):
         if 0 <= next_col < len(chart[0]):
-            destinations.append((next_row, next_col))
+            destination = (next_row, next_col)
+            destinations.append(destination)
+
+            new_path = past_visited + [destination]
+            opt.append(algo_strat(chart, next_row, next_col, new_path))
+
+    for index in range(len(opt)):
+        option = opt[index]
+        destination = destinations[index]
+        total = 0
+
+        for option_row, option_col in option:
+            total += chart[option_row][option_col]
+
+        if total > highest_value:
+            highest_value = total
+            best_option = option
     
-    for row, col in destinations:
-        if chart[row][col] > highest_value:
-            highest_value = chart[row][col]
-            highest = (row,col)
-    
-    past_visited.append(highest)
-    return algo_strat(chart, highest[0], highest[1], past_visited)
+    return best_option
 
 
 
-# def test():
+def test():
     chart = [
         [0, 0, 0],
-        [4, 5, 2],
-        [9, 3, 5],
+        [1, 5, 12],
+        [100, 3, 5],
     ]
 
     result = algo_strat(chart, 0, 1, [])
     print(result)
 
-# test()
+test()
 
 
