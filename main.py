@@ -16,7 +16,7 @@ def baseline(chart, row, col, past_visited):
             destinations.append(destination)
 
             new_path = past_visited + [destination]
-            opt.append(algo_strat(chart, next_row, next_col, new_path))
+            opt.append(baseline(chart, next_row, next_col, new_path))
 
     for index in range(len(opt)):
         option = opt[index]
@@ -36,12 +36,12 @@ def baseline(chart, row, col, past_visited):
 
 def test():
     chart = [
-        [0, 0, 0],
-        [1, 5, 12],
-        [100, 3, 5],
+        [1, 3, 0],
+        [2, -6, -2],
+        [2, 1, 9],
     ]
 
-    result = algo_strat(chart, 0, 1, [])
+    result = baseline(chart, 0, 1, [])
     print(result)
 
 test()

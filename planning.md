@@ -8,7 +8,7 @@ Formally, for $1 \le r \le n$, a valid path to row $r$ is a sequence of coordina
 
 ## Baseline Solution
 
-Our baseline is an exhaustive brute-force search that checks every valid path, so it always finds a best one, although it is too slow for large grids. The algorithm tries each surface coordinate $(1, j)$ as a starting point. From $(i, j)$, it recursively tries the moves to $(i+1, j-1)$, $(i+1, j)$, and $(i+1, j+1)$, skipping down-left when $j = 1$ and down-right when $j = m$. When the recursion reaches row $n$, it compares the score of the finished path with the best score so far and, if it is higher, records the score and the path. Because one shared list holds the current path, the path is copied when recorded. The search never stops early on a negative running total, because a hydrothermal vent may lead to rich coral further down. If several paths tie, it returns the one whose column sequence comes first in lexicographic order, since it tries moves from left to right and only replaces the best path on a strictly higher score.
+Our baseline is an exhaustive recursive search that checks every valid continuation from a specified starting coordinate. From $(i, j)$, it tries the moves to $(i+1, j-1)$, $(i+1, j)$, and $(i+1, j+1)$, skipping destinations outside the grid. Each recursive branch receives a new copy of the path, so paths from different branches do not modify one another. When the recursion reaches the final row, it returns the completed path. The caller then calculates the total score of every returned option and keeps the option with the highest total. If several options tie, the first one is kept because destinations are examined from left to right and the algorithm replaces the best option only when it finds a strictly higher total. To solve the full problem when the submersible may start in any surface column, this routine must be called once for each surface coordinate and the best returned path must be selected.
 
 For example, consider the following $3 \times 3$ grid:
 
@@ -23,50 +23,61 @@ The drawback is the number of paths. When $m \ge 2$, every coordinate above the 
 ### Pseudocode
 
 ```text
-Algorithm SubmersiblePathBruteForce(B):
+ALGORITHM FindBestPath(chart, row, column, visitedPath)
 
-    Input:
-        B: An n x m grid of biomass density scores, where B[i][j] is the
-           score at row i and column j (both numbered from 1)
+    nextRow ← row + 1
+    destinations ← empty list
+    highestTotal ← negative infinity
+    bestOption ← nothing
 
-    Output:
-        The maximum total biomass density score and a path that achieves it
+    IF nextRow is outside the chart:
+        RETURN visitedPath
 
-    n = number of rows in B
-    m = number of columns in B
+    options ← empty list
 
-    // B, n, m, best_score and best_path are shared by every call to Explore
-    best_score = -infinity
-    best_path = empty list
+    FOR each possibleColumn in:
+        column - 1
+        column
+        column + 1
 
-    for j from 1 to m:
-        Explore(1, j, B[1][j], [(1, j)])
+        IF possibleColumn is inside the chart:
 
-    return best_score, best_path
+            destination ← (nextRow, possibleColumn)
+            add destination to destinations
 
+            newPath ← copy of visitedPath
+            add destination to newPath
 
-Function Explore(i, j, score, path):
+            option ← FindBestPath(
+                chart,
+                nextRow,
+                possibleColumn,
+                newPath
+            )
 
-    // path is a valid path from row 1 to row i ending at column j,
-    // and score is its total
-    if i == n:
-        if score > best_score:
-            best_score = score
-            best_path = copy of path
-        return
+            add option to options
 
-    for next_col in [j - 1, j, j + 1]:
-        if 1 <= next_col <= m:
-            append (i + 1, next_col) to path
-            Explore(i + 1, next_col, score + B[i + 1][next_col], path)
-            remove the last element from path
+    FOR each option in options:
+
+        total ← 0
+
+        FOR each (optionRow, optionColumn) in option:
+            total ← total + chart[optionRow][optionColumn]
+
+        IF total is greater than highestTotal:
+            highestTotal ← total
+            bestOption ← option
+
+    RETURN bestOption
 ```
 
 ### Correctness
 
-Every call to `Explore` returns with `path` unchanged: a call at row $n$ does not modify it, and every other call removes each coordinate it appends once the recursive call on it returns, which by induction on $n - i$ has left `path` as it found it. Therefore, every call `Explore(i, j, score, path)` is made with `path` holding a valid path to row $i$ that ends at column $j$, and with `score` equal to its total. This holds for the calls from the outer loop, where `path` is $[(1, j)]$ and `score` is $B(1, j)$, and each recursive call extends the unchanged `path` by one downward move inside the grid and adds that coordinate's score. Since $i$ grows by one with each call, the recursion always stops at row $n$.
+We show that `FindBestPath(chart, row, column, visitedPath)` returns the best path among all valid continuations from its starting coordinate. If the next row is outside the chart, the current path already reaches the final row, so returning `visitedPath` is correct.
 
-Conversely, every valid path $(1, c_1), \dots, (n, c_n)$ is reached by exactly one call at row $n$: the outer loop picks $c_1$ once, and at each row the loop over `next_col` picks $c_{i+1}$ exactly once, because $c_{i+1}$ is one of the three candidates, it passes the bounds test since the path is valid, and the candidates are different. So the calls at row $n$ correspond exactly to the valid paths, each with its correct score. At least one valid path always exists (straight down), and the algorithm keeps the highest score among these calls, so it returns the maximum total biomass density score and a path that achieves it.
+Otherwise, the algorithm considers each legal next column: `column - 1`, `column`, and `column + 1`. For every legal move, it creates a separate path and recursively explores every continuation from that destination. By induction on the number of rows remaining, each recursive call returns the best path for its destination. Therefore, the `options` list contains the best completed path for every possible next move.
+
+The final loop calculates the total score of each option and keeps the option with the greatest total. Since every legal next move is considered and every recursive continuation is explored, the returned `bestOption` has the maximum score among all valid paths from the starting coordinate. Calling the routine for every surface coordinate and comparing those results produces an optimal path for the full grid.
 
 ## Algorithmic Strategy
 
