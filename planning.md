@@ -2,22 +2,13 @@
 
 ## Problem Formulation
 
-You are charting a newly discovered, biologically dense ocean trench represented by an nm grid of vertical depth zones and horizontal coordinates. 
+The objective of the Navigating the Sea problem is to find a path for an autonomous submersible through a newly discovered ocean trench that maximizes the total accumulated biomass density score. The trench is represented by an $n \times m$ grid of $n$ vertical depth zones (rows) and $m$ horizontal coordinates (columns), where $n, m \ge 1$ and both are numbered from 1. Each coordinate $(i, j)$ has a surveyed biomass density score $B(i, j)$, which can be positive (rich coral) or negative (hazardous hydrothermal vents that damage sensors). The submersible starts at any coordinate on the surface (row 1) and must reach the ocean floor (row $n$), where it may end at any coordinate. To conserve battery, it can only move downward: from $(i, j)$, it can move only to $(i+1, j-1)$ (down-left), $(i+1, j)$ (straight down), or $(i+1, j+1)$ (down-right), and it cannot leave the grid.
 
-
-Inputs: Each coordinate (i,j) has a surveyed "biomass density" score B(i,j), which can be positive (rich coral) or negative (hazardous hydrothermal vents that damage sensors). An autonomous submersible drops from the surface (row 1) and must navigate to the ocean floor (row n). 
-
-
-Output: Determine the path that maximizes the total accumulated biomass density score.
-
-
-Constraints: To conserve battery, the submersible can only move downward. From zone (i,j), it can only move to (i+1,j-1) (down-left), (i+1,j) (straight down), or (i+1,j+1) (down-right). The submersible can start at any horizontal coordinate on the surface and end at any horizontal coordinate on the floor. 
+Formally, a valid path is a sequence of coordinates $(1, c_1), (2, c_2), \dots, (n, c_n)$, one for each row, where $1 \le c_i \le m$ for every $i$ and $|c_{i+1} - c_i| \le 1$ for $1 \le i \le n - 1$. Its score is $\sum_{i=1}^{n} B(i, c_i)$. The input is the grid $B$, and the output is a valid path with the maximum score, together with that score. If several paths tie, any one of them may be returned. Our goal is to design an algorithm that finds this optimal path and scales efficiently even when the grid is very large.
 
 ## Baseline Solution
 
-Our baseline is an exhaustive brute-force search that checks every valid path, so it always finds a best one, although it is too slow for large grids. The grid has $n$ rows and $m$ columns, both numbered from 1. A valid path is a sequence of coordinates $(1, c_1), (2, c_2), \dots, (n, c_n)$, one for each row, where every $c_i$ satisfies $1 \le c_i \le m$ and consecutive columns satisfy $|c_{i+1} - c_i| \le 1$. Its score is $\sum_{i=1}^{n} B(i, c_i)$.
-
-The algorithm tries each surface coordinate $(1, j)$ as a starting point. From $(i, j)$, it recursively tries the moves to $(i+1, j-1)$, $(i+1, j)$, and $(i+1, j+1)$, skipping down-left when $j = 1$ and down-right when $j = m$. When the recursion reaches row $n$, it compares the score of the finished path with the best score so far and, if it is higher, records the score and the path. Because one shared list holds the current path, the path is copied when recorded. The search never stops early on a negative running total, because a hydrothermal vent may lead to rich coral further down. If several paths tie, it returns the one whose column sequence comes first in lexicographic order, since it tries moves from left to right and only replaces the best path on a strictly higher score.
+Our baseline is an exhaustive brute-force search that checks every valid path, so it always finds a best one, although it is too slow for large grids. The algorithm tries each surface coordinate $(1, j)$ as a starting point. From $(i, j)$, it recursively tries the moves to $(i+1, j-1)$, $(i+1, j)$, and $(i+1, j+1)$, skipping down-left when $j = 1$ and down-right when $j = m$. When the recursion reaches row $n$, it compares the score of the finished path with the best score so far and, if it is higher, records the score and the path. Because one shared list holds the current path, the path is copied when recorded. The search never stops early on a negative running total, because a hydrothermal vent may lead to rich coral further down. If several paths tie, it returns the one whose column sequence comes first in lexicographic order, since it tries moves from left to right and only replaces the best path on a strictly higher score.
 
 For example, consider the following $3 \times 3$ grid:
 
@@ -79,7 +70,7 @@ Conversely, every valid path $(1, c_1), \dots, (n, c_n)$ is reached by exactly o
 
 ## Algorithmic Strategy
 
-We propose a dynamic programming algorithm. The key observation is that the best valid path ending at $(i, j)$ must pass through column $j - 1$, $j$, or $j + 1$ in row $i - 1$, and its part up to row $i - 1$ must itself be a best path to that coordinate, since otherwise replacing it with a better one would give a better path to $(i, j)$. So instead of checking every path like the baseline, we compute, for every coordinate, the best score $D(i, j)$ of a valid path (as defined in the Baseline Solution) that starts anywhere on the surface and ends at $(i, j)$:
+We propose a dynamic programming algorithm. The key observation is that the best valid path ending at $(i, j)$ must pass through column $j - 1$, $j$, or $j + 1$ in row $i - 1$, and its part up to row $i - 1$ must itself be a best path to that coordinate, since otherwise replacing it with a better one would give a better path to $(i, j)$. So instead of checking every path like the baseline, we compute, for every coordinate, the best score $D(i, j)$ of a valid path (as defined in the Problem Formulation) that starts anywhere on the surface and ends at $(i, j)$:
 
 ```math
 D(1, j) = B(1, j), \qquad D(i, j) = B(i, j) + \max_{k} D(i-1, k) \text{ for } 2 \le i \le n
