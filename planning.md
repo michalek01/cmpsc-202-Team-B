@@ -77,43 +77,69 @@ Every call `Explore(i, j, score, path)` is made with `path` holding a valid path
 Conversely, every valid path $(1, c_1), \dots, (n, c_n)$ is reached by exactly one call at row $n$: the outer loop picks $c_1$ once, and at each row the loop over `next_col` picks $c_{i+1}$ exactly once, because $c_{i+1}$ is one of the three candidates, it passes the bounds test since the path is valid, and the candidates are different. So the calls at row $n$ correspond exactly to the valid paths, each with its correct score. At least one valid path always exists (straight down), and the algorithm keeps the highest score among these calls, so it returns the maximum total biomass density score and a path that achieves it.
 
 **Algorithmic Strategy:**
-Our algorithmic strategy will work similarly to Dijkstra's algorithm instead looking at all posible paths bellow the robot and find the path that holds the highest biomass.
 
-Input: a matrix of corinates each holding a biomass score matrix: List[Lists[floats]], a starting node row, col and a list of past destinations
-Expected Ouput: path to accumulate highest biomass score
+We propose a dynamic programming algorithm. The key observation is that the best valid path ending at $(i, j)$ must pass through column $j - 1$, $j$, or $j + 1$ in row $i - 1$, and its part up to row $i - 1$ must itself be a best path to that coordinate, since otherwise replacing it with a better one would give a better path to $(i, j)$. So instead of checking every path like the baseline, we compute, for every coordinate, the best score $D(i, j)$ of a valid path (as defined in the Baseline Solution) that starts anywhere on the surface and ends at $(i, j)$:
 
-'''
-FUNCTION algo_strat(chart, row, col, past_visited):
+```math
+D(1, j) = B(1, j), \qquad D(i, j) = B(i, j) + \max_{k} D(i-1, k) \text{ for } 2 \le i \le n
+```
 
-    current_value ← chart[row][col]
-    next_row ← row + 1
-    destinations ← empty list
-    highest ← NONE
-    highest_value ← negative infinity
+where $k$ ranges over the columns $j - 1$, $j$, and $j + 1$ that lie inside the grid. The table is filled one row at a time from the surface down, so every value on the right-hand side is already known when it is needed. Every valid path ends somewhere on the ocean floor, so the answer is $\max_j D(n, j)$. To return the path itself, we also record in $P(i, j)$ the column $k$ that gives the maximum, choosing the leftmost one when there is a tie, and follow these pointers from the best floor coordinate back to the surface. Each coordinate is computed once from at most three values, while the baseline recomputes the same partial paths many times (its example has 17 paths but only 9 coordinates). On that example, the last row of $D$ is $9, 8, 10$, so the algorithm returns 10 and follows $P$ back to the same optimal path $(1,2) \to (2,3) \to (3,3)$, even though it passes through the vent at $(2,3)$.
 
-    IF next_row is greater than or equal to number of rows in chart:
-        RETURN past_visited
+**Strategy Pseudocode:**
 
-    FOR next_col IN [col - 1, col, col + 1]:
-        IF next_col is within the chart boundaries:
-            ADD (next_row, next_col) TO destinations
+```text
+Algorithm SubmersiblePathDP(B):
 
-    FOR each (destination_row, destination_col) IN destinations:
-        destination_value ← chart[destination_row][destination_col]
+    Input:
+        B: An n x m grid of biomass density scores, where B[i][j] is the
+           score at row i and column j (both numbered from 1)
 
-        IF destination_value > highest_value:
-            highest_value ← destination_value
-            highest ← (destination_row, destination_col)
+    Output:
+        The maximum total biomass density score and a path that achieves it
 
-    ADD highest TO past_visited
+    n = number of rows in B
+    m = number of columns in B
 
-    RETURN algo_strat(
-        chart,
-        highest row,
-        highest column,
-        past_visited
-    )
+    // D[i][j] is the best score of a valid path from row 1 to (i, j), and
+    // P[i][j] is the column in row i - 1 that this best path comes from
+    D = n x m table
+    P = n x m table
 
-'''
+    for j from 1 to m:
+        D[1][j] = B[1][j]
+
+    for i from 2 to n:
+        for j from 1 to m:
+            D[i][j] = -infinity
+            for prev_col in [j - 1, j, j + 1]:
+                if 1 <= prev_col <= m:
+                    if B[i][j] + D[i - 1][prev_col] > D[i][j]:
+                        D[i][j] = B[i][j] + D[i - 1][prev_col]
+                        P[i][j] = prev_col
+
+    // Choose the best coordinate on the ocean floor
+    best_score = -infinity
+    for j from 1 to m:
+        if D[n][j] > best_score:
+            best_score = D[n][j]
+            best_col = j
+
+    // Follow P from the floor back to the surface
+    best_path = [(n, best_col)]
+    col = best_col
+    for i from n down to 2:
+        col = P[i][col]
+        append (i - 1, col) to best_path
+    reverse best_path
+
+    return best_score, best_path
+```
+
+**Strategy Correctness:**
+
+The loop over `prev_col` computes exactly the recurrence above: it starts from $-\infty$ and keeps the largest value of $B(i, j) + D(i - 1, k)$ over the columns $k$ inside the grid, and at least one such column ($k = j$) always exists. We show by induction on $i$ that $D(i, j)$ is the maximum score of a valid path from row 1 to $(i, j)$, and that following $P$ back from $(i, j)$ gives a path with that score. For $i = 1$, the only such path is $(1, j)$ itself, with score $B(1, j)$. Now let $i \ge 2$ and assume the claim for row $i - 1$. Any valid path to $(i, j)$ passes through some column $k$ in row $i - 1$ with $k \in \{j - 1, j, j + 1\}$ inside the grid, and its part up to row $i - 1$ scores at most $D(i - 1, k)$ by the induction hypothesis, so its total is at most $B(i, j) + \max_k D(i - 1, k) = D(i, j)$. Conversely, following $P$ back from $(i - 1, P(i, j))$ gives a path with score $D(i - 1, P(i, j))$ by the induction hypothesis, and adding $(i, j)$ to it gives a valid path to $(i, j)$ with score exactly $D(i, j)$.
+
+Every valid path ends at some coordinate $(n, j)$ on the ocean floor, so the maximum total score is $\max_j D(n, j)$, which is `best_score`. Following $P$ back from `best_col` gives `best_path`, a valid path that achieves it. Therefore, the algorithm always returns an optimal path.
 
 **Complexity Analysis:**
