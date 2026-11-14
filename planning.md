@@ -150,3 +150,5 @@ We show by induction on $i$ that $D(i, j)$ is the maximum score of a valid path 
 Every valid path ends at some coordinate $(n, j)$ on the ocean floor, so the maximum total score is $\max_j D(n, j)$, which is `best_score`. Following $P$ back from `best_col` gives `best_path`, a valid path that achieves it. Therefore, the algorithm always returns an optimal path.
 
 ## Complexity Analysis
+
+Our Dynamic programming algortithm increases our running time significantly compared to our baseline. Our baseline  algorithm uses a recursive search with a worst case time of O(3^n). This is because it explores each coordinate. Our dynamic strategy is much more efficient before checks each coordinate in the m x n grid once. It examines at most three possible predecessor coordinates to determine the maxium score. Each coordinate requires a constant amount off work and therefore reduces the wrst case running time for this algorrithm. Making it O(mn). This makes this algorithm more suitable for larger grids.
