@@ -124,7 +124,7 @@ D(1, j) = B(1, j), \qquad D(i, j) = B(i, j) + \max_{k} D(i-1, k) \text{ for } 2 
 
 where $k$ ranges over the columns $j - 1$, $j$, and $j + 1$ that lie inside the grid. The table is filled one row at a time from the surface down, so every value on the right-hand side is already known when it is needed. Every valid path ends somewhere on the ocean floor, so the answer is $\max_j D(n, j)$. To return the path itself, we also record in $P(i, j)$ the column $k$ that gives the maximum, choosing the leftmost one when there is a tie, and follow these pointers from the best floor coordinate back to the surface.
 
-Each coordinate is computed once from at most three values, while the baseline re-explores everything below a coordinate once for every partial path that reaches it (27 calls to `Explore` on only 9 coordinates in its example). On that example, the last row of $D$ is $9, 8, 10$, so the algorithm returns 10 and follows $P$ back to the same optimal path $(1,2) \to (2,3) \to (3,3)$.
+Each coordinate is computed once from at most three values, while the baseline re-explores everything below a coordinate once for every partial path that reaches it (27 calls to `FindBestPath` across all three starting columns, even though the example has only 9 coordinates). On that example, the last row of $D$ is $9, 8, 10$, so the algorithm returns 10 and follows $P$ back to the same optimal path $(1,2) \to (2,3) \to (3,3)$.
 
 ### Pseudocode
 
