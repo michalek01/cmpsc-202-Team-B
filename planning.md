@@ -8,7 +8,9 @@ Formally, for $1 \le r \le n$, a valid path to row $r$ is a sequence of coordina
 
 ## Baseline Solution
 
-Our baseline is an exhaustive recursive search that checks every valid continuation from a specified starting coordinate. From $(i, j)$, it tries the moves to $(i+1, j-1)$, $(i+1, j)$, and $(i+1, j+1)$, skipping destinations outside the grid. Each recursive branch receives a new copy of the path, so paths from different branches do not modify one another. When the recursion reaches the final row, it returns the completed path. The caller then calculates the total score of every returned option and keeps the option with the highest total. If several options tie, the first one is kept because destinations are examined from left to right and the algorithm replaces the best option only when it finds a strictly higher total. To solve the full problem when the submersible may start in any surface column, this routine must be called once for each surface coordinate and the best returned path must be selected.
+Our baseline is an exhaustive recursive search that checks every valid continuation of a supplied path. The recursive helper `FindBestPath` tries the moves from its current coordinate $(i, j)$ to $(i+1, j-1)$, $(i+1, j)$, and $(i+1, j+1)$, skipping destinations outside the grid. Each recursive branch receives a new copy of the path, so paths from different branches do not modify one another. When the recursion reaches the final row, it returns the completed path. The caller then calculates the total score of every returned option and keeps the option with the highest total. If several options tie, the first one is kept because destinations are examined from left to right and the algorithm replaces the best option only when it finds a strictly higher total.
+
+The main algorithm, `SubmersiblePathBaseline`, tries every surface column from left to right. For each column $j$, it calls `FindBestPath(chart, 1, j, [(1, j)])`, so the starting coordinate is included in the path and its score. It calculates the total score of each returned path and keeps the best path and score across all starting columns, again retaining the first path when scores tie. The best score is initialized to negative infinity so that paths with negative totals are also considered. Finally, it returns both the maximum score and a path that achieves it.
 
 For example, consider the following $3 \times 3$ grid:
 
@@ -23,7 +25,38 @@ The drawback is the number of paths. When $m \ge 2$, every coordinate above the 
 ### Pseudocode
 
 ```text
-ALGORITHM FindBestPath(chart, row, column, visitedPath)
+ALGORITHM SubmersiblePathBaseline(chart)
+
+    Input:
+        chart: An n x m grid of biomass density scores, with n, m >= 1
+               and rows and columns both numbered from 1
+
+    Output:
+        The maximum total biomass density score and a path that achieves it
+
+    m ← number of columns in chart
+    bestScore ← negative infinity
+    bestPath ← nothing
+
+    FOR startColumn from 1 to m:
+
+        candidatePath ← FindBestPath(chart, 1, startColumn, [(1, startColumn)])
+        total ← 0
+
+        FOR each (pathRow, pathColumn) in candidatePath:
+            total ← total + chart[pathRow][pathColumn]
+
+        IF total is greater than bestScore:
+            bestScore ← total
+            bestPath ← candidatePath
+
+    RETURN bestScore, bestPath
+
+
+FUNCTION FindBestPath(chart, row, column, visitedPath)
+
+    // visitedPath is a valid path from row 1 to (row, column),
+    // including both its starting coordinate and its current coordinate
 
     nextRow ← row + 1
     destinations ← empty list
@@ -73,11 +106,13 @@ ALGORITHM FindBestPath(chart, row, column, visitedPath)
 
 ### Correctness
 
-We show that `FindBestPath(chart, row, column, visitedPath)` returns the best path among all valid continuations from its starting coordinate. If the next row is outside the chart, the current path already reaches the final row, so returning `visitedPath` is correct.
+Assume that `visitedPath` is a valid path from row 1 to `(row, column)`, including both its starting coordinate and its current coordinate. We show by induction on the number of rows remaining that `FindBestPath(chart, row, column, visitedPath)` returns a completed path of maximum total score among all valid extensions of this fixed path. If the next row is outside the chart, the current path already reaches the final row and is its only completed extension, so returning `visitedPath` is correct.
 
-Otherwise, the algorithm considers each legal next column: `column - 1`, `column`, and `column + 1`. For every legal move, it creates a separate path and recursively explores every continuation from that destination. By induction on the number of rows remaining, each recursive call returns the best path for its destination. Therefore, the `options` list contains the best completed path for every possible next move.
+Otherwise, the algorithm considers each legal next column: `column - 1`, `column`, and `column + 1`. For every legal move, it copies `visitedPath` and appends the destination, preserving the required path condition for the recursive call. Each call has one fewer row remaining, so by the induction hypothesis it returns the best completed extension of that new path. Therefore, the `options` list contains the best completed path for every possible next move.
 
-The final loop calculates the total score of each option and keeps the option with the greatest total. Since every legal next move is considered and every recursive continuation is explored, the returned `bestOption` has the maximum score among all valid paths from the starting coordinate. Calling the routine for every surface coordinate and comparing those results produces an optimal path for the full grid.
+The final loop calculates the total score of each option and keeps the option with the greatest total. Every completed extension of `visitedPath` must take one of the legal next moves, so the returned `bestOption` has the maximum score among all such extensions.
+
+For every surface column $j$, `SubmersiblePathBaseline` initializes the path to `[(1, j)]`, which satisfies the helper's precondition. The helper therefore returns the best complete path starting at $(1, j)$, including the starting coordinate. Every valid path starts in one of these columns, so comparing all returned paths produces the maximum score over the full grid. Initializing `bestScore` to negative infinity ensures that a path is selected even when all totals are negative, and updating only for a strictly higher score retains an optimal path when scores tie. Thus, the algorithm returns both an optimal path and its total score.
 
 ## Algorithmic Strategy
 
