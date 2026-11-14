@@ -59,7 +59,6 @@ FUNCTION FindBestPath(chart, row, column, visitedPath)
     // including both its starting coordinate and its current coordinate
 
     nextRow ← row + 1
-    destinations ← empty list
     highestTotal ← negative infinity
     bestOption ← nothing
 
@@ -76,8 +75,6 @@ FUNCTION FindBestPath(chart, row, column, visitedPath)
         IF possibleColumn is inside the chart:
 
             destination ← (nextRow, possibleColumn)
-            add destination to destinations
-
             newPath ← copy of visitedPath
             add destination to newPath
 
@@ -196,7 +193,7 @@ This gives a simple worst-case upper bound of $T_{\text{baseline}}(n,m) = O(nm3^
 
 For the dynamic programming algorithm, filling in the first row of $D$ takes $O(m)$ time. Each of the other $(n-1)m$ coordinates looks at no more than three predecessor coordinates and records the best score and its predecessor in constant time, so computing the whole table takes $O(nm)$ time. After that, finding the best coordinate in the last row takes $O(m)$ time, and following the predecessor pointers to build the path and then reversing it each take $O(n)$ time.
 
-Adding these up, the total running time is $T_{\text{DP}}(n,m) = O(m + nm + m + n) = O(nm + m + n)$. Because $n, m \ge 1$, both $n$ and $m$ are at most $nm$, which simplifies the bound to $O(nm)$. In other words, the running time is linear in the number of grid coordinates, which makes this algorithm far more practical than exhaustive search for grids with many rows and more than one column.
+Adding these up, the total running time is $T_{\text{DP}}(n,m) = O(m + nm + m + n) = O(nm + m + n)$. Because $n, m \ge 1$, both $n$ and $m$ are at most $nm$, which simplifies the bound to $O(nm)$. The algorithm fills in every one of the $nm$ entries of $D$ no matter what the scores are, so its running time is also $\Omega(nm)$ and therefore $\Theta(nm)$. In other words, the running time is linear in the number of grid coordinates, which makes this algorithm far more practical than exhaustive search for grids with many rows and more than one column.
 
 The two algorithms also differ in how much space they need. Not counting the input grid, the baseline uses $O(n^2)$ extra space. Its recursion depth is $O(n)$, and each active call can hold onto a partial path plus at most three completed candidate paths, each with at most $n$ coordinates. It is these stored paths, and not just the recursion stack, that make the space quadratic. The starting columns are handled one after another, so their memory use is not multiplied by $m$.
 
