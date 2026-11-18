@@ -145,3 +145,89 @@ def FindBestPath(chart: list, row: int, column: int, visited_path: list) -> list
             best_option = option
 
     return best_option
+
+
+def SubmersiblePathDP(chart: list) -> tuple:
+    """
+    Find a path with the maximum total biomass density score using dynamic
+    programming.
+
+    The submersible starts at any column of the surface (row 0) and moves one
+    row down at a time, to the down-left, straight down, or down-right
+    coordinate, without leaving the grid, until it reaches the ocean floor
+    (row n - 1).
+
+    The function fills two n x m tables row by row from the surface down.
+    D[i][j] is the best score of a valid path from row 0 that ends at (i, j),
+    computed as chart[i][j] plus the largest of D[i - 1][j - 1],
+    D[i - 1][j], and D[i - 1][j + 1] that lie inside the grid. P[i][j] stores
+    the column in row i - 1 that gives this best score. The best floor
+    coordinate is then traced back through P to rebuild the path.
+
+    When several paths tie for the maximum score, the leftmost floor column
+    is chosen, and then the leftmost predecessor at every row.
+
+    For an n x m chart, the running time is Theta(n * m) and the extra space
+    is O(n * m), as derived in the Complexity Analysis of planning.md.
+
+    Args:
+        chart (list): An n x m grid (a list of n rows, each a list of m
+            scores) of biomass density scores, where n, m >= 1.
+
+    Returns:
+        tuple: (best_score, best_path), where best_score is the maximum total
+            score and best_path is a list of n (row, column) tuples, one per
+            row, that achieves it.
+
+    Raises:
+        ValueError: If the chart is empty or its rows have different lengths.
+    """
+
+    _validate_chart(chart)
+
+    n = len(chart)
+    m = len(chart[0])
+
+    # D[i][j] is the best score of a valid path from row 0 to (i, j), and
+    # P[i][j] is the column in row i - 1 that this best path comes from
+    D = [[0] * m for _ in range(n)]
+    P = [[None] * m for _ in range(n)]
+
+    for j in range(m):
+        D[0][j] = chart[0][j]
+
+    # Every value in row i - 1 is final before row i is computed, because
+    # the table is filled from the surface down
+    for i in range(1, n):
+        for j in range(m):
+            D[i][j] = float("-inf")
+
+            for prev_col in (j - 1, j, j + 1):
+                if 0 <= prev_col < m:
+                    # Strictly greater keeps the leftmost predecessor on ties
+                    if chart[i][j] + D[i - 1][prev_col] > D[i][j]:
+                        D[i][j] = chart[i][j] + D[i - 1][prev_col]
+                        P[i][j] = prev_col
+
+    # Every valid path ends somewhere on the ocean floor, so the best one
+    # ends at the floor coordinate with the largest D value
+    best_score = float("-inf")
+    best_col = None
+
+    for j in range(m):
+        if D[n - 1][j] > best_score:
+            best_score = D[n - 1][j]
+            best_col = j
+
+    # P points upward, so the path is collected from the floor to the
+    # surface and then reversed
+    best_path = [(n - 1, best_col)]
+    col = best_col
+
+    for i in range(n - 1, 0, -1):
+        col = P[i][col]
+        best_path.append((i - 1, col))
+
+    best_path.reverse()
+
+    return best_score, best_path
