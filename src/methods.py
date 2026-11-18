@@ -47,6 +47,11 @@ def SubmersiblePathBaseline(chart: list) -> tuple:
     For an n x m chart, the running time is O(n * m * 3^(n-1)) and the extra
     space is O(n^2), as derived in the Complexity Analysis of planning.md.
 
+    The recursion goes one level deeper for every row, so a chart with about
+    1,000 rows or more exceeds Python's default recursion limit and raises
+    RecursionError. This only matters when m = 1, because with m >= 2 the
+    search is already far too slow long before the chart is that tall.
+
     Args:
         chart (list): An n x m grid (a list of n rows, each a list of m
             scores) of biomass density scores, where n, m >= 1.
