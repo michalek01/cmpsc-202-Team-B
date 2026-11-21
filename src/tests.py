@@ -28,9 +28,14 @@ def brute_force_reference(chart):
 
     Taking the smaller column in every row of two optimal paths gives another
     optimal path, so there is exactly one optimal path that is leftmost in
-    every row. Both algorithms return that path, and so does this function,
-    because it visits sequences in lexicographic order and only replaces the
-    best on a strictly higher score.
+    every row. With integer scores, both algorithms return that path, and so
+    does this function, because it visits sequences in lexicographic order
+    and only replaces the best on a strictly higher score.
+
+    This only holds when sums are exact. With float scores, rounding can make
+    two equal totals compare as different (0.3 + -0.1 < 0.1 + 0.1), and the
+    DP, which compares partial sums, can then break a tie differently from
+    the baseline, which compares full totals.
     """
     n = len(chart)
     m = len(chart[0])
@@ -255,6 +260,9 @@ class TestRandomCharts(PathTestCase):
                 self.assertEqual(SubmersiblePathDP(chart), expected)
 
     def test_float_charts_baseline_matches_dp(self):
+        # Scores drawn uniformly from a continuous range practically never
+        # tie, so the optimal path is unique and the whole results can be
+        # compared even though rounding could break float ties differently.
         rng = random.Random(203)
 
         for _ in range(200):

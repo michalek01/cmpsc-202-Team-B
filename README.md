@@ -14,4 +14,4 @@ From the `src` folder:
 
 - `python3 -m unittest tests -v` runs the tests.
 - `python3 benchmark.py` times both algorithms and writes the results to `assets/empirical_results.csv`.
-- `plots.ipynb` reads that file and saves the plots to `assets/`. It needs pandas, seaborn, and matplotlib.
+- `plots.ipynb` reads that file and saves the plots to `assets/`. It needs numpy, pandas, seaborn, and matplotlib.
